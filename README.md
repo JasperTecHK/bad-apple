@@ -28,28 +28,8 @@ And to run the code:
 
 And just follow the on-screen prompts. 
 
-~~# Performance optimizations
-Currently, my implementation of a rudimentary static `time.sleep()` function results in an incremental error over time. This thus leads to the frame accucracy drifting.
-
-~~I am also looking into improving frame extraction and generation times.
-
 # Current known issues and bugs
-~~Despite being a somewhat simple program, my crappy implementation has led to a lot of unresovled bugs and issues. I am currently
-looking at fixing some of them. 
-
-~~1) block=False is not supported in Linux
-
-~~I am currently trying to find alternatives to the `playsound` library. Using two different threads is not an option currently as
-I was running into desynchronization issues.~~
-
-~~This issue has been fixed in v3, alongside other performance improvements. 
-
-~~2) No such file or directory: 'ExtractedFrames/BadApple_1.jpg'
-
-~~Not really sure how this is happening, but will be looking into fixing it. I was unable to replicate the error but I assume it is 
-due to my botchy implementation of file directories for the assets. 
-
-Most of the above have been solved on my branch's v2-Threading_Implementation version. Timing is a mild issue, unsure of if issue exists on Windows, or environment, but is consistantly 0.00x, instead of Linux's smoother 0.000x. Still, timing is good enough to the regular viewer. --JasperTech
+Timing is a mild issue, unsure of if issue exists on Windows, or environment, but is consistantly 0.00x, instead of Linux's smoother 0.000x. Still, timing is good enough to the regular viewer. --JasperTech
 
 # Version descriptor
 1) touhou_bad_apple_v1.py
@@ -64,8 +44,7 @@ logic was completed in 24 hours with some minor tweaks and comments afterwards.
 
 3) touhou_bad_apple_v3.py
 
-~~Current development version. Improved frame time delay and better file I/O. Looking to implement threading to expedite
-frame extraction and ASCII conversion. 
+~~Current development version. Improved frame time delay and better file I/O. Looking to implement threading to expedite frame extraction and ASCII conversion.~~
 
 Will be backported to v2-Threading if the implementation is good. v2-Threading should be treated as a seperate branch entirely, with features found on v2, v3, and more additions.
 
