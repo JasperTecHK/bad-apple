@@ -14,7 +14,7 @@ from queue import Queue
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
 
 # frame_interval = 0.0329
-frame_interval = 1 / 31
+frame_interval = 1.0 / 31
 frame_size = 150
 
 def play_video(result):
@@ -52,7 +52,6 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
         process.setDaemon(True)
         process.start()
 
-
     progframe = total_frames - q.qsize()    #This is just for the progress bar.
     progdone = False
     while progframe <= total_frames:
@@ -70,7 +69,6 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     q.join()
     cap.release()
     print("\nVideo processing and ascii-fication completed!\n")
-
     return result
 
 def asciiprocessing(q,result, optchosen):
@@ -104,7 +102,6 @@ def resize_image(image_frame):
 def greyscale(image_frame):
     return image_frame.convert("L")
 
-
 # Convert pixels to ascii
 def pixels_to_ascii(image_frame):
     pixels = image_frame.getdata()
@@ -123,9 +120,7 @@ def ascii_generator(passthru):
     return ascii_image
 
 def save_later(encodesource):
-    with open ("temprez.txt", "w+") as rlebackup:
-        #for i in encodesource:
-            #rlebackup.write(str(i))
+    with open ("BadApple.rle", "w+") as rlebackup:
         rlebackup.write(json.dumps(encodesource).replace("{}, ",""))
 
 def encode_to_rle(temp):
@@ -153,19 +148,31 @@ def encode_to_rle(temp):
 def decode_from_rle(result):
     with open(result, "r") as pregenframes:
         framesource = json.loads(pregenframes.read())
-        #framecomplete = []
-        numthreads = min(50, len(framesource))
+        total_frames = len(framesource)
+        numthreads = min(50, total_frames)
         print("Processing frames... One moment!")
         q = Queue(maxsize=0)
-        result = [{} for x in range(len(framesource))]
+        result = [{} for x in range(total_frames)]
         for i in range(len(framesource)):
-            print(framesource[i])
             q.put((i, framesource[i]))
-        sys.exit()
         for i in range(numthreads):
             process = threading.Thread(target=asciidecoding, args=(q, result))
             process.setDaemon(True)
             process.start()
+
+        progframe = total_frames - q.qsize()    #This is just for the progress bar.
+        progdone = False
+        while progframe <= total_frames:
+            if progframe > total_frames:
+                progframe = total_frames
+            if progframe == total_frames:
+                progdone = True
+
+            progress_bar(progframe - 1, total_frames - 1)
+            progframe = total_frames - q.qsize()
+
+            if progdone:
+                break
 
         q.join()
         return result
@@ -173,20 +180,18 @@ def decode_from_rle(result):
 def asciidecoding(q,result):
     while not q.empty():
         framesource = q.get()
-        #print(type(framesource))
-        charset = framesource[0]
-        charcount = framesource[1]
+        framecontent = framesource[1]
+        charset = framecontent[0]
+        charcount = framecontent[1]
         cycles = -1
         frameshape = ""
         for chartemp in charcount:
             cycles += 1
             maxchars = 0
-            print(chartemp)
-            #while maxchars < int(chartemp):
-                #frameshape += charset[cycles]
-                #maxchars += 1
-        #frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)
-        frameshape = "hi"
+            while maxchars < int(chartemp):
+                frameshape += charset[cycles]
+                maxchars += 1
+        frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)
         result[framesource[0]] = frameshape
         q.task_done()
     return True
@@ -220,18 +225,23 @@ def main():
         print('Select option: \n')
         print('1) Create and/or play\n')
         print('2) Save for later\n')
-        print('3) Load\n')
+        print('3) Delete save\n')
         print('4) Terminal Scaling\n')
         print('5) Exit\n')
         print('==============================================================\n')
 
-        user_input = input("Your option: ")
+        user_input = str(input("Your option: "))
         user_input.strip()  # removes trailing whitespaces
 
         if user_input == '1':
             #songname = audiosource()
-            results = extract_resize_convert_frames('BadApple.mp4', 1)
-            os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
+            if os.isfile("BadApple.rle"):
+                print('Decoding save.')
+                results = decode_from_rle("BadApple.rle")
+                print('Decode complete!')
+            else:
+                results = extract_resize_convert_frames('BadApple.mp4', 1)
+            #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
             try:
                 p = vlc.MediaPlayer("bad-apple-audio.mp3")
                 p.play()
@@ -240,7 +250,7 @@ def main():
                 logging.info('Stopped')
             except:
                 p.stop()
-            os.system('color 07')  #Not the best idea when users might have customized it.
+            #os.system('color 07')  #Not the best idea when users might have customized it.
             continue
         elif user_input == '2':
             #songname = audiosource()
@@ -250,25 +260,18 @@ def main():
             print('Results saved!')
             sys.exit()
         elif user_input == '3':
-            print('Decoding save.')
-            results = decode_from_rle("temprez.txt")
-            print('Decode complete!')
-            sys.exit()
+            print("Removing save...")
             try:
-                p = vlc.MediaPlayer("bad-apple-audio.mp3")
-                p.play()
-                logging.info('Started')
-                play_video(results)
-                logging.info('Stopped')
+                os.remove("BadApple.rle")
             except:
-                p.stop()
-            sys.exit()
+                print("File does not exist.")
+            continue
         elif user_input == '4':
             while True:
                 frow = ''
-                for i in range(150):
+                for i in range(149):
                     frow = frow + '#'
-                print(frow)
+                print(frow + '@')
                 for i in range(44):
                     print('#')
                 confscale = input('# Lowest line ends here. Is this ok? Y / N : ')
@@ -285,8 +288,8 @@ def main():
 if __name__ == "__main__":
     main()
 
-#Todo: RLE SAVE the resulting ascii frames as a single file.
-#Todo: Implement back in the save feature.
+#Todo: RLE SAVE the resulting ascii frames as a single file.        --Done
+#Todo: Implement back in the save feature.                          --Done
 #Todo: Generalify so it can be used for any video (theoretically).
-#Todo: Looping ascii art to scale console to size before start. --Done
-#Todo: Replace audio library to support force stopping of playback.
+#Todo: Looping ascii art to scale console to size before start.     --Done
+#Todo: Replace audio library to support force stopping of playback. --Done
