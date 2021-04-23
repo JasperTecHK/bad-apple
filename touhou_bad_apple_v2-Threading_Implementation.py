@@ -213,7 +213,7 @@ def delete_assets():
 # Main function
 def main():
     while True:
-        logging.basicConfig(filename='compute_delay.log', level=logging.INFO)
+        logging.basicConfig(filename='compute_delay.log', level=logging.INFO, filemode='w+')
         print('==============================================================\n')
         print('Select option: \n')
         print('1) Create and/or play\n')
@@ -232,8 +232,6 @@ def main():
                 print('Decoding save.')
                 results = decode_from_rle("BadApple.rle")
                 print('\nDecode complete!')
-                #print(results[5760])
-                #sys.exit()
             else:
                 results = extract_resize_convert_frames('BadApple.mp4', 1)
             #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
