@@ -121,28 +121,22 @@ def ascii_generator(passthru):
 
 def save_later(encodesource):
     with open ("BadApple.rle", "w+") as rlebackup:
-        rlebackup.write(json.dumps(encodesource).replace("{}, ",""))
+        rlebackup.write(json.dumps(encodesource))
 
 def encode_to_rle(temp):
     frameset = temp.replace("\n", "")
     lastchar = ""
-    storage = [[], []]
-    storagechars = []
-    storagecount = []
-    charcount = 0
+    storage = ""
+    charcount = 1
     for pixel in frameset:
         if pixel != lastchar:
-            if charcount != 0:
-                storagechars.append(lastchar)
-                storagecount.append(charcount)
+            if lastchar:
+                storage += str(charcount) + lastchar
             lastchar = pixel
             charcount = 1
         else:
             charcount += 1
-    storagechars.append(lastchar)
-    storagecount.append(charcount)
-    storage[0] = storagechars
-    storage[1] = storagecount
+    storage += str(charcount) + lastchar
     return storage
 
 def decode_from_rle(result):
@@ -181,18 +175,17 @@ def asciidecoding(q,result):
     while not q.empty():
         framesource = q.get()
         framecontent = framesource[1]
-        charset = framecontent[0]
-        charcount = framecontent[1]
-        cycles = -1
         frameshape = ""
-        for chartemp in charcount:
-            cycles += 1
-            maxchars = 0
-            while maxchars < int(chartemp):
-                frameshape += charset[cycles]
-                maxchars += 1
+        cycles = ""
+        for pixel in framecontent:
+            if pixel.isdigit():
+                cycles += pixel
+            else:
+                frameshape += pixel * int(cycles)
+                cycles = ""
+
         frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)
-        result[framesource[0]] = frameshape
+        result[framesource[0]] = frameshape[:-1]
         q.task_done()
     return True
 
@@ -235,10 +228,12 @@ def main():
 
         if user_input == '1':
             #songname = audiosource()
-            if os.isfile("BadApple.rle"):
+            if os.path.isfile("BadApple.rle"):
                 print('Decoding save.')
                 results = decode_from_rle("BadApple.rle")
-                print('Decode complete!')
+                print('\nDecode complete!')
+                #print(results[5760])
+                #sys.exit()
             else:
                 results = extract_resize_convert_frames('BadApple.mp4', 1)
             #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
@@ -269,7 +264,7 @@ def main():
         elif user_input == '4':
             while True:
                 frow = ''
-                for i in range(149):
+                for i in range(150):
                     frow = frow + '#'
                 print(frow + '@')
                 for i in range(44):
