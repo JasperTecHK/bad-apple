@@ -84,6 +84,7 @@ Note that the ASCII conversion code is not original, and was taken from [here](h
 1) Faster overall frame generation + asciification. (Properly utilizes threading, and combines steps to allow for less spaghetti)
 2) Less I/O steps to non-volatile storage mediums (from 6571* 4 to 1 * 2 if saving, else frames are generated per execution.)
 3) Compressed saved results (Stores all frames in one file, with RLE compression to achieve 7x less size, 8x block size, compared to saving individual frames, per frame.)
-4) Breakout support (Exits a bit more gracefully, instead of spewing errors.) 
+4) Breakout support (Exits a bit more gracefully, instead of spewing errors.)
+5) Frame-terminal setup guide (Adds in a fake frame to adjust terminal shape before execution.)
  
 
