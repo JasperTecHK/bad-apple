@@ -16,7 +16,7 @@ import pygame
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", " "]
 
 # frame_interval = 0.0329
-frame_interval = 1 / 31
+frame_interval = 1.0 / 31
 frame_size = 150
 
 
@@ -73,9 +73,10 @@ def extract_frames(video_path):
     sys.stdout.write("\nVideo frame extraction completed\n")
 
 
-# A little note of acknowledgement to AlexRohwer. The following code of converting image frames into ASCII characters is not original, and is
-# based off the code from https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py. As this code repository gains more
-# traction, I feel that I need to properly source the code.
+# A little note of acknowledgement to AlexRohwer. The following code of converting image frames into ASCII characters
+# is not original, and is based off the code from
+# https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py. As this code repository gains
+# more traction, I feel that I need to properly source the code.
 
 
 # Resize image
@@ -102,14 +103,14 @@ def pixels_to_ascii(image_frame):
 
 
 # Open image => Resize => Greyscale => Convert to ASCII => Store in text file
-def ascii_generator(image_frame, index):
+def ascii_generator(image_frame, frame_count):
     resized_image = resize_image(image_frame)  # resize the image
     greyscale_image = greyscale(resized_image)  # convert to greyscale
     ascii_characters = pixels_to_ascii(greyscale_image)  # get ascii characters
     pixel_count = len(ascii_characters)
     ascii_image = "\n".join(
         [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
-    file_name = r"TextFiles/" + "bad_apple" + str(index) + ".txt"
+    file_name = r"TextFiles/" + "bad_apple" + str(frame_count) + ".txt"
     with open(file_name, "w") as f:
         f.write(ascii_image)
 
@@ -187,7 +188,7 @@ def main():
         sys.stdout.write('3) Exit\n')
         sys.stdout.write('==============================================================\n')
 
-        user_input = input("Your option: ")
+        user_input = str(input("Your option: "))
         user_input.strip()  # removes trailing whitespaces
 
         if user_input == '1':
