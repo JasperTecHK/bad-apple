@@ -9,6 +9,7 @@ The concept of playing Bad Apple!! on a Command Line Interface (CLI) is not a no
 There are many iterations and versions around YouTube and I wanted to give it a shot. The intent of posting the video on YouTube was to show a few friends of a simple weekend project that I whipped up in Python. 
 
 CalvinLoke's original video can be found [here](https://www.youtube.com/watch?v=AZfrXrk3ZHc).
+
 Changes to this readme in relation to changes not found on the master branch will be suffixxed with --JasperTech.
 
 # Running this code
