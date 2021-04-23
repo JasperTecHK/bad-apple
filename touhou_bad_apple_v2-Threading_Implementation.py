@@ -43,6 +43,8 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
         ret, frame = cap.read()
         q.put((i, frame))
 
+    cap.release()
+
     for i in range(numthreads):
         process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen))
         process.setDaemon(True)
@@ -63,7 +65,6 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
             break
 
     q.join()
-    cap.release()
     print("\nVideo processing and ascii-fication completed!\n")
     return result
 
@@ -190,7 +191,7 @@ def audiosource():
     while True:
         user_input = input("What is the name of the song you want to ascii-ify?")
         user_input.strip()
-        if not os.file.exists(user_input):
+        if not os.path.isfile(user_input):
             print("Invalid file. Please check again.")
         else:
             break
@@ -211,7 +212,7 @@ def main():
             print('==============================================================\n')
 
             user_input = str(input("Your option: "))
-            user_input.strip()  # removes trailing whitespaces
+            user_input.strip()  #Removes trailing whitespaces
 
             if user_input == '1':
                 #songname = audiosource()
@@ -222,14 +223,15 @@ def main():
                 else:
                     results = extract_resize_convert_frames('BadApple.mp4', 1)
                 #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
+                p = vlc.MediaPlayer("bad-apple-audio.mp3")
                 try:
-                    p = vlc.MediaPlayer("bad-apple-audio.mp3")
                     p.play()
                     logging.info('Started')
                     play_video(results)
                     logging.info('Stopped')
                 except:
-                    p.stop()
+                    if p.is_playing():
+                        p.stop()
                 #os.system('color 07')  #Not the best idea when users might have customized it.
                 continue
             elif user_input == '2':
