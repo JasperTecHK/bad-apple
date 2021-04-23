@@ -81,7 +81,7 @@ These functions are called in the `ascii_generator()` function to convert image 
 Note that the ASCII conversion code is not original, and was taken from [here](https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py).
 
 ## Differences compared to master branch implementation --JasperTech
-1) Faster overall frame generation + asciification. (Properly utilizes threading, and combines steps to allow for less sphagetti)
+1) Faster overall frame generation + asciification. (Properly utilizes threading, and combines steps to allow for less spaghetti)
 2) Less I/O steps to non-volatile storage mediums (from 6571* 4 to 1 * 2 if saving, else frames are generated per execution.)
 3) Compressed saved results (Stores all frames in one file, with RLE compression to achieve 7x less size, 8x block size, compared to saving individual frames, per frame.)
 4) Breakout support (Exits a bit more gracefully, instead of spewing errors.) 
