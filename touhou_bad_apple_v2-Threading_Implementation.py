@@ -6,28 +6,23 @@ import time
 import vlc
 import os
 import logging
+import fpstimer
 import json
 import re
 import threading
 from queue import Queue
 
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
-
-# frame_interval = 0.0329
-frame_interval = 1.0 / 31
 frame_size = 150
 
 def play_video(result):
-    delay_default = 0.033
+    timer = fpstimer.FPSTimer(30)                       #Solves timing for the most part on both OS platforms.
     for framescene in range(len(result)):
         start_time = time.time()
         print(str(result[framescene]))
-        compute_delay = float(time.time() - start_time)
-        delay_duration = delay_default - compute_delay
-        logging.info(str(delay_duration))
-        if delay_duration < 0:
-            delay_duration = 0
-        time.sleep(delay_duration)
+        compute_delay = float(time.time() - start_time) #Windows timing not tight enough, still touch slow. Windows average delays at 0.00x, Linux 0.000x
+        logging.info(str(compute_delay))
+        timer.sleep()
 
 # Progress bar code is courtesy of StackOverflow user: Aravind Voggu.
 # Link to thread: https://stackoverflow.com/questions/6169217/replace-console-output-in-python
@@ -44,7 +39,7 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     print("Processing frames... One moment!")
     q = Queue(maxsize=0)
     result = [{} for x in range(total_frames)]
-    for i in range(1, total_frames):
+    for i in range(total_frames):
         ret, frame = cap.read()
         q.put((i, frame))
 
@@ -201,82 +196,76 @@ def audiosource():
             break
     return user_input
 
-# Delete extracted frames and .txt files
-def delete_assets():
-    for index in range(1, 6572):
-        # print("Deleting .txt files...")
-        file_name = r"TextFiles/" + "bad_apple" + str(index) + ".txt"
-        try:
-            os.remove(file_name)
-        except:
-            continue
-
 # Main function
 def main():
     while True:
-        logging.basicConfig(filename='compute_delay.log', level=logging.INFO, filemode='w+')
-        print('==============================================================\n')
-        print('Select option: \n')
-        print('1) Create and/or play\n')
-        print('2) Save for later\n')
-        print('3) Delete save\n')
-        print('4) Terminal Scaling\n')
-        print('5) Exit\n')
-        print('==============================================================\n')
+        try:
+            logging.basicConfig(filename='compute_delay.log', level=logging.INFO, filemode='w+')
+            print('==============================================================\n')
+            print('Select option: \n')
+            print('1) Create and/or play\n')
+            print('2) Save for later\n')
+            print('3) Delete save\n')
+            print('4) Terminal Scaling\n')
+            print('5) Exit\n')
+            print('==============================================================\n')
 
-        user_input = str(input("Your option: "))
-        user_input.strip()  # removes trailing whitespaces
+            user_input = str(input("Your option: "))
+            user_input.strip()  # removes trailing whitespaces
 
-        if user_input == '1':
-            #songname = audiosource()
-            if os.path.isfile("BadApple.rle"):
-                print('Decoding save.')
-                results = decode_from_rle("BadApple.rle")
-                print('\nDecode complete!')
+            if user_input == '1':
+                #songname = audiosource()
+                if os.path.isfile("BadApple.rle"):
+                    print('Decoding save.')
+                    results = decode_from_rle("BadApple.rle")
+                    print('\nDecode complete!')
+                else:
+                    results = extract_resize_convert_frames('BadApple.mp4', 1)
+                #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
+                try:
+                    p = vlc.MediaPlayer("bad-apple-audio.mp3")
+                    p.play()
+                    logging.info('Started')
+                    play_video(results)
+                    logging.info('Stopped')
+                except:
+                    p.stop()
+                #os.system('color 07')  #Not the best idea when users might have customized it.
+                continue
+            elif user_input == '2':
+                #songname = audiosource()
+                results = extract_resize_convert_frames('BadApple.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
+                print('Generating and saving results...\n')
+                save_later(results)
+                print('Results saved!')
+                sys.exit()
+            elif user_input == '3':
+                print("Removing save...")
+                try:
+                    os.remove("BadApple.rle")
+                except:
+                    print("File does not exist.")
+                continue
+            elif user_input == '4':
+                while True:
+                    frow = ''
+                    for i in range(150):
+                        frow = frow + '#'
+                    print(frow + '@')
+                    for i in range(44):
+                        print('#')
+                    confscale = input('# Lowest line ends here. Is this ok? Y / N : ')
+                    if confscale == 'Y' or confscale == 'y':
+                        break
+                continue
+            elif user_input == '5':
+                sys.exit()
             else:
-                results = extract_resize_convert_frames('BadApple.mp4', 1)
-            #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
-            try:
-                p = vlc.MediaPlayer("bad-apple-audio.mp3")
-                p.play()
-                logging.info('Started')
-                play_video(results)
-                logging.info('Stopped')
-            except:
-                p.stop()
-            #os.system('color 07')  #Not the best idea when users might have customized it.
-            continue
-        elif user_input == '2':
-            #songname = audiosource()
-            results = extract_resize_convert_frames('BadApple.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
-            print('Generating and saving results...\n')
-            save_later(results)
-            print('Results saved!')
+                print('Unknown input!\n')
+                continue
+        except: #In case of Ctrl-C, graceful exit.
+            print("Aborting script.")
             sys.exit()
-        elif user_input == '3':
-            print("Removing save...")
-            try:
-                os.remove("BadApple.rle")
-            except:
-                print("File does not exist.")
-            continue
-        elif user_input == '4':
-            while True:
-                frow = ''
-                for i in range(150):
-                    frow = frow + '#'
-                print(frow + '@')
-                for i in range(44):
-                    print('#')
-                confscale = input('# Lowest line ends here. Is this ok? Y / N : ')
-                if confscale == 'Y' or confscale == 'y':
-                    break
-            continue
-        elif user_input == '5':
-            sys.exit()
-        else:
-            print('Unknown input!\n')
-            continue
 
 
 if __name__ == "__main__":
