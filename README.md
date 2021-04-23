@@ -8,7 +8,8 @@ The concept of playing Bad Apple!! on a Command Line Interface (CLI) is not a no
 
 There are many iterations and versions around YouTube and I wanted to give it a shot. The intent of posting the video on YouTube was to show a few friends of a simple weekend project that I whipped up in Python. 
 
-My own video can be found [here](https://www.youtube.com/watch?v=AZfrXrk3ZHc).
+CalvinLoke's original video can be found [here](https://www.youtube.com/watch?v=AZfrXrk3ZHc).
+Changes to this readme in relation to changes not found on the master branch will be suffixxed with --JasperTech.
 
 # Running this code
 Thanks to [TheHusyin](https://github.com/TheHusyin) for adding a `requirements.txt` file for easier installs.
@@ -23,30 +24,32 @@ Install the necessary dependencies and packages by using:
 
 And to run the code:
 
-`python touhou_bad_apple_v2.py`
+`python touhou_bad_apple_v2-Threading_Implementation.py` --JasperTech
 
 And just follow the on-screen prompts. 
 
-# Performance optimizations
-Currently, my implementation of a rudimentary static `time.sleep()` function results in an incremental error over time. This thus leads to the frame accucracy drifting. 
+~~# Performance optimizations
+Currently, my implementation of a rudimentary static `time.sleep()` function results in an incremental error over time. This thus leads to the frame accucracy drifting.
 
-I am also looking into improving frame extraction and generation times.
+~~I am also looking into improving frame extraction and generation times.
 
 # Current known issues and bugs
-Despite being a somewhat simple program, my crappy implementation has led to a lot of unresovled bugs and issues. I am currently
+~~Despite being a somewhat simple program, my crappy implementation has led to a lot of unresovled bugs and issues. I am currently
 looking at fixing some of them. 
 
-1) block=False is not supported in Linux
+~~1) block=False is not supported in Linux
 
 ~~I am currently trying to find alternatives to the `playsound` library. Using two different threads is not an option currently as
 I was running into desynchronization issues.~~
 
-This issue has been fixed in v3, alongside other performance improvements. 
+~~This issue has been fixed in v3, alongside other performance improvements. 
 
-2) No such file or directory: 'ExtractedFrames/BadApple_1.jpg'
+~~2) No such file or directory: 'ExtractedFrames/BadApple_1.jpg'
 
-Not really sure how this is happening, but will be looking into fixing it. I was unable to replicate the error but I assume it is 
+~~Not really sure how this is happening, but will be looking into fixing it. I was unable to replicate the error but I assume it is 
 due to my botchy implementation of file directories for the assets. 
+
+Most of the above have been solved on my branch's v2-Threading_Implementation version. Timing is a mild issue, unsure of if issue exists on Windows, or environment, but is consistantly 0.00x, instead of Linux's smoother 0.000x. Still, timing is good enough to the regular viewer. --JasperTech
 
 # Version descriptor
 1) touhou_bad_apple_v1.py
@@ -61,8 +64,10 @@ logic was completed in 24 hours with some minor tweaks and comments afterwards.
 
 3) touhou_bad_apple_v3.py
 
-Current development version. Improved frame time delay and better file I/O. Looking to implement threading to expedite
+~~Current development version. Improved frame time delay and better file I/O. Looking to implement threading to expedite
 frame extraction and ASCII conversion. 
+
+Will be backported to v2-Threading if the implementation is good. v2-Threading should be treated as a seperate branch entirely, with features found on v2, v3, and more additions.
 
 
 # Functions
@@ -70,9 +75,6 @@ The main functions will be listed here.
 
 ## play_video()
 Reads the files from the previously generated ASCII .txt files and prints it out onto the console. 
-
-## play_audio()
-Plays the bad apple audio track. 
 
 ## progress_bar(current, total, barLength=25)
 A simple progress bar function that generates the status of both frame extraction and ASCII frame generation. 
@@ -97,5 +99,11 @@ pixels_to_ascii()
 These functions are called in the `ascii_generator()` function to convert image files to ASCII format and stores them into .txt files. 
 
 Note that the ASCII conversion code is not original, and was taken from [here](https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py).
+
+## Differences compared to master branch implementation --JasperTech
+1) Faster overall frame generation + asciification. (Properly utilizes threading, and combines steps to allow for less sphagetti)
+2) Less I/O steps to non-volatile storage mediums (from 6571* 4 to 1 * 2 if saving, else frames are generated per execution.)
+3) Compressed saved results (Stores all frames in one file, with RLE compression to achieve 7x less size, 8x block size, compared to saving individual frames, per frame.)
+4) Breakout support (Exits a bit more gracefully, instead of spewing errors.) 
  
 
