@@ -18,11 +18,12 @@ frame_interval = 1.0 / 31
 frame_size = 150
 
 def play_video(result):
+    delay_default = 0.033
     for framescene in range(len(result)):
         start_time = time.time()
         print(str(result[framescene]))
         compute_delay = float(time.time() - start_time)
-        delay_duration = frame_interval - compute_delay
+        delay_duration = delay_default - compute_delay
         logging.info(str(delay_duration))
         if delay_duration < 0:
             delay_duration = 0
