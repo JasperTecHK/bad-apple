@@ -19,6 +19,8 @@ Changes to this readme in relation to changes not found on the master branch wil
 4) Breakout support (Exits a bit more gracefully, instead of spewing errors.)
 5) Frame-terminal setup guide (Adds in a fake frame to adjust terminal shape before execution.)
 
+Tl;dr, Fixed basically every issue plaguing the original.
+
 # Running this code
 Thanks to [TheHusyin](https://github.com/TheHusyin) for adding a `requirements.txt` file for easier installs.
 
