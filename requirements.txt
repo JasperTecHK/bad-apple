@@ -1,4 +1,4 @@
 opencv-python
 pillow
-python-vlc
-fpstimer
+playsound
+pygame
