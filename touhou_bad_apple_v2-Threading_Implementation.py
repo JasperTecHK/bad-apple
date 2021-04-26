@@ -16,7 +16,7 @@ ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
 frame_size = 150
 
 def play_video(result, srcfps):
-    timer = fpstimer.FPSTimer(int(srcfps))                       #Solves timing for the most part on both OS platforms.
+    timer = fpstimer.FPSTimer(srcfps)                       #Solves timing for the most part on both OS platforms.
     start_time = time.time()
     for framescene in range(len(result)):
         print(str(result[framescene]))

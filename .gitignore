@@ -1,4 +1,8 @@
 /.idea
+/ExtractedFrames
+/TextFiles
+*.sh
+*.rle
 *.jpg
 *.txt
 *.log
