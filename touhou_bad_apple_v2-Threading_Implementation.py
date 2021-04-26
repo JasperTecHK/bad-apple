@@ -15,14 +15,15 @@ from queue import Queue
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
 frame_size = 150
 
-def play_video(result):
-    timer = fpstimer.FPSTimer(30)                       #Solves timing for the most part on both OS platforms.
+def play_video(result, srcfps):
+    timer = fpstimer.FPSTimer(int(srcfps))                       #Solves timing for the most part on both OS platforms.
+    start_time = time.time()
     for framescene in range(len(result)):
-        start_time = time.time()
         print(str(result[framescene]))
         compute_delay = float(time.time() - start_time) #Windows timing not tight enough, still touch slow. Windows average delays at 0.00x, Linux 0.000x
         logging.info(str(compute_delay))
         timer.sleep()
+        start_time = time.time()
 
 # Progress bar code is courtesy of StackOverflow user: Aravind Voggu.
 # Link to thread: https://stackoverflow.com/questions/6169217/replace-console-output-in-python
@@ -35,6 +36,7 @@ def progress_bar(current, total, barLength=25):
 def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save to queue, then ascii-fy, and save.
     cap = cv2.VideoCapture(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  # gets the total number of frames
+    srcfps = int(cap.get(cv2.CAP_PROP_FPS))
     numthreads = min(50, total_frames)
     print("Processing frames... One moment!")
     q = Queue(maxsize=0)
@@ -46,7 +48,7 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     cap.release()
 
     for i in range(numthreads):
-        process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen))
+        process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen, srcfps))
         process.setDaemon(True)
         process.start()
 
@@ -66,9 +68,9 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
 
     q.join()
     print("\nVideo processing and ascii-fication completed!\n")
-    return result
+    return result, srcfps
 
-def asciiprocessing(q,result, optchosen):
+def asciiprocessing(q,result, optchosen, srcfps):
     while not q.empty():
         work = q.get()
         if optchosen == 1:
@@ -116,8 +118,9 @@ def ascii_generator(passthru):
         [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
     return ascii_image
 
-def save_later(encodesource):
-    with open ("BadApple.rle", "w+") as rlebackup:
+def save_later(encodesource, songname, srcfps):
+    with open (songname + ".rle", "w+") as rlebackup:
+        encodesource.insert(0, srcfps)
         rlebackup.write(json.dumps(encodesource))
 
 def encode_to_rle(temp):
@@ -139,12 +142,14 @@ def encode_to_rle(temp):
 def decode_from_rle(result):
     with open(result, "r") as pregenframes:
         framesource = json.loads(pregenframes.read())
+        srcfps = framesource[0]
+        del framesource[0]
         total_frames = len(framesource)
         numthreads = min(50, total_frames)
         print("Processing frames... One moment!")
         q = Queue(maxsize=0)
         result = [{} for x in range(total_frames)]
-        for i in range(len(framesource)):
+        for i in range(1, len(framesource)):
             q.put((i, framesource[i]))
         for i in range(numthreads):
             process = threading.Thread(target=asciidecoding, args=(q, result))
@@ -166,7 +171,7 @@ def decode_from_rle(result):
                 break
 
         q.join()
-        return result
+        return result, srcfps
 
 def asciidecoding(q,result):
     while not q.empty():
@@ -180,7 +185,6 @@ def asciidecoding(q,result):
             else:
                 frameshape += pixel * int(cycles)
                 cycles = ""
-
         frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)
         result[framesource[0]] = frameshape[:-1]
         q.task_done()
@@ -189,9 +193,9 @@ def asciidecoding(q,result):
 
 def audiosource():
     while True:
-        user_input = input("What is the name of the song you want to ascii-ify?")
+        user_input = input("What is the name of the video you want to ascii-ify?")
         user_input.strip()
-        if not os.path.isfile(user_input):
+        if not os.path.isfile(user_input + ".mp4"):
             print("Invalid file. Please check again.")
         else:
             break
@@ -215,19 +219,27 @@ def main():
             user_input.strip()  #Removes trailing whitespaces
 
             if user_input == '1':
-                #songname = audiosource()
-                if os.path.isfile("BadApple.rle"):
+                songname = audiosource()
+                if os.path.isfile(songname + ".rle"):
                     print('Decoding save.')
-                    results = decode_from_rle("BadApple.rle")
+                    results, srcfps = decode_from_rle(songname + ".rle")
                     print('\nDecode complete!')
                 else:
-                    results = extract_resize_convert_frames('BadApple.mp4', 1)
+                    results, srcfps = extract_resize_convert_frames(songname + '.mp4', 1)
                 #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
-                p = vlc.MediaPlayer("bad-apple-audio.mp3")
-                try:
+                if os.path.isfile(songname + ".mp3"):
+                    p = vlc.MediaPlayer(songname + ".mp3")
+                    print("Playing .mp3")
                     p.play()
+                elif os.path.isfile(songname + ".mid"): #...not as nice imo, on second thought.
+                    p.vlc.MediaPlayer(songname + ".mid")
+                    print("Playing .mid")
+                    p.play()
+                else:
+                    print("No audio track found, skipping audio playback.")
+                try:
                     logging.info('Started')
-                    play_video(results)
+                    play_video(results, srcfps)
                     logging.info('Stopped')
                 except:
                     if p.is_playing():
@@ -235,16 +247,17 @@ def main():
                 #os.system('color 07')  #Not the best idea when users might have customized it.
                 continue
             elif user_input == '2':
-                #songname = audiosource()
-                results = extract_resize_convert_frames('BadApple.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
+                songname = audiosource()
+                results, srcfps = extract_resize_convert_frames(songname + '.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
                 print('Generating and saving results...\n')
-                save_later(results)
+                save_later(results, songname, srcfps)
                 print('Results saved!')
                 sys.exit()
             elif user_input == '3':
+                songname = audiosource()
                 print("Removing save...")
                 try:
-                    os.remove("BadApple.rle")
+                    os.remove(songname + ".rle")
                 except:
                     print("File does not exist.")
                 continue
@@ -266,7 +279,7 @@ def main():
                 print('Unknown input!\n')
                 continue
         except: #In case of Ctrl-C, graceful exit.
-            print("Aborting script.")
+            print("Ending script.")
             sys.exit()
 
 
@@ -275,6 +288,6 @@ if __name__ == "__main__":
 
 #Todo: RLE SAVE the resulting ascii frames as a single file.        --Done
 #Todo: Implement back in the save feature.                          --Done
-#Todo: Generalify so it can be used for any video (theoretically).
+#Todo: Generalify so it can be used for any video (theoretically).  --Done
 #Todo: Looping ascii art to scale console to size before start.     --Done
 #Todo: Replace audio library to support force stopping of playback. --Done
