@@ -18,9 +18,8 @@ Changes to this readme in relation to changes not found on the master branch wil
 3) Compressed saved results (Stores all frames in one file, with RLE compression to achieve 7x less size, 8x block size, compared to saving individual frames, per frame.)
 4) Breakout support (Exits a bit more gracefully, instead of spewing errors.)
 5) Frame-terminal setup guide (Adds in a fake frame to adjust terminal shape before execution.)
-6) Added in Generalization, which means this branch is now officially not Bad-Apple limited, and can run any video into an ascii! (Quality will depend on source video.)
 
-Tl;dr, Fixed basically every issue plaguing the original + added in extra features!
+Tl;dr, Fixed basically every issue plaguing the original.
 
 # Running this code
 Thanks to [TheHusyin](https://github.com/TheHusyin) for adding a `requirements.txt` file for easier installs.
