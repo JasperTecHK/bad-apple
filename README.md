@@ -1,5 +1,5 @@
-# bad-apple
- Bad Apple printed out on the console with Python!
+# Bad-Apple-Plus!
+ Bad Apple printed out on the console with Python! Now with any video support!
 
 # Preface
 A word of disclaimer, while the final code is somewhat original, this project is an amalgamation of different code snippets that I found online. As the main YouTube Video begins to gain traction, I feel the need to inform the audience that this code is NOT ENTIRELY ORIGINAL. 

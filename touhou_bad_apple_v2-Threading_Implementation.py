@@ -10,13 +10,14 @@ import fpstimer
 import json
 import re
 import threading
+import traceback
 from queue import Queue
 
-ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
+ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", " "]
 frame_size = 150
 
 def play_video(result, srcfps):
-    timer = fpstimer.FPSTimer(srcfps)                       #Solves timing for the most part on both OS platforms.
+    timer = fpstimer.FPSTimer(srcfps)                   #Solves timing for the most part on both OS platforms.
     start_time = time.time()
     for framescene in range(len(result)):
         print(str(result[framescene]))
@@ -42,13 +43,13 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     q = Queue(maxsize=0)
     result = [{} for x in range(total_frames)]
     for i in range(total_frames):
-        ret, frame = cap.read()
+        ret, frame = cap.read() #What does ret do?
         q.put((i, frame))
 
     cap.release()
 
     for i in range(numthreads):
-        process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen, srcfps))
+        process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen))
         process.setDaemon(True)
         process.start()
 
@@ -70,7 +71,7 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     print("\nVideo processing and ascii-fication completed!\n")
     return result, srcfps
 
-def asciiprocessing(q,result, optchosen, srcfps):
+def asciiprocessing(q,result, optchosen):
     while not q.empty():
         work = q.get()
         if optchosen == 1:
@@ -109,17 +110,14 @@ def pixels_to_ascii(image_frame):
 
 # Open image => Resize => Greyscale => Convert to ASCII => Store in memory/export
 def ascii_generator(passthru):
-    image_frame = Image.fromarray(passthru)     # Directly convert the image to something PIL can use, instead of an extra i/o step.
-    resized_image = resize_image(image_frame)   # resize the image
-    greyscale_image = greyscale(resized_image)  # convert to greyscale
-    ascii_characters = pixels_to_ascii(greyscale_image)  # get ascii characters
+    ascii_characters = pixels_to_ascii(greyscale(resize_image(Image.fromarray(passthru))))  # get ascii characters
     pixel_count = len(ascii_characters)
     ascii_image = "\n".join(                    #Can't change this, haven't the foggiest what this does for now.
         [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
     return ascii_image
 
-def save_later(encodesource, songname, srcfps):
-    with open (songname + ".rle", "w+") as rlebackup:
+def save_later(encodesource, sourcename, srcfps):
+    with open (sourcename + ".rle", "w+") as rlebackup:
         encodesource.insert(0, srcfps)
         rlebackup.write(json.dumps(encodesource))
 
@@ -193,7 +191,7 @@ def asciidecoding(q,result):
 
 def audiosource():
     while True:
-        user_input = input("What is the name of the video you want to ascii-ify?")
+        user_input = input("What is the name of the video you want to play back?")
         user_input.strip()
         if not os.path.isfile(user_input + ".mp4"):
             print("Invalid file. Please check again.")
@@ -219,20 +217,20 @@ def main():
             user_input.strip()  #Removes trailing whitespaces
 
             if user_input == '1':
-                songname = audiosource()
-                if os.path.isfile(songname + ".rle"):
+                sourcename = audiosource()
+                if os.path.isfile(sourcename + ".rle"):
                     print('Decoding save.')
-                    results, srcfps = decode_from_rle(songname + ".rle")
+                    results, srcfps = decode_from_rle(sourcename + ".rle")
                     print('\nDecode complete!')
                 else:
-                    results, srcfps = extract_resize_convert_frames(songname + '.mp4', 1)
+                    results, srcfps = extract_resize_convert_frames(sourcename + '.mp4', 1)
                 #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
-                if os.path.isfile(songname + ".mp3"):
-                    p = vlc.MediaPlayer(songname + ".mp3")
+                if os.path.isfile(sourcename + ".mp3"):
+                    p = vlc.MediaPlayer(sourcename + ".mp3")
                     print("Playing .mp3")
                     p.play()
-                elif os.path.isfile(songname + ".mid"): #...not as nice imo, on second thought.
-                    p.vlc.MediaPlayer(songname + ".mid")
+                elif os.path.isfile(sourcename + ".mid"): #...not as nice imo, on second thought.
+                    p.vlc.MediaPlayer(sourcename + ".mid")
                     print("Playing .mid")
                     p.play()
                 else:
@@ -247,17 +245,17 @@ def main():
                 #os.system('color 07')  #Not the best idea when users might have customized it.
                 continue
             elif user_input == '2':
-                songname = audiosource()
-                results, srcfps = extract_resize_convert_frames(songname + '.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
+                sourcename = audiosource()
+                results, srcfps = extract_resize_convert_frames(sourcename + '.mp4', 2)   #Directly bypasses both above, as it does both, with less i/o!
                 print('Generating and saving results...\n')
-                save_later(results, songname, srcfps)
+                save_later(results, sourcename, srcfps)
                 print('Results saved!')
-                sys.exit()
+                break
             elif user_input == '3':
-                songname = audiosource()
+                sourcename = audiosource()
                 print("Removing save...")
                 try:
-                    os.remove(songname + ".rle")
+                    os.remove(sourcename + ".rle")
                 except:
                     print("File does not exist.")
                 continue
@@ -274,11 +272,12 @@ def main():
                         break
                 continue
             elif user_input == '5':
-                sys.exit()
+                break
             else:
                 print('Unknown input!\n')
                 continue
         except: #In case of Ctrl-C, graceful exit.
+            #(traceback.format_exc())
             print("Ending script.")
             sys.exit()
 
