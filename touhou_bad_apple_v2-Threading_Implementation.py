@@ -277,7 +277,7 @@ def main():
                 print('Unknown input!\n')
                 continue
         except: #In case of Ctrl-C, graceful exit.
-            #(traceback.format_exc())
+            #print(traceback.format_exc())
             print("Ending script.")
             sys.exit()
 
