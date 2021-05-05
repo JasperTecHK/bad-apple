@@ -38,36 +38,14 @@ def extract_resize_convert_frames(video_path, optchosen):  #Extract frame, save 
     cap = cv2.VideoCapture(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  # gets the total number of frames
     srcfps = int(cap.get(cv2.CAP_PROP_FPS))
-    numthreads = min(50, total_frames)
     print("Processing frames... One moment!")
-    q = Queue(maxsize=0)
-    result = [{} for x in range(total_frames)]
+    framesource = []
     for i in range(total_frames):
-        ret, frame = cap.read() #What does ret do?
-        q.put((i, frame))
+        ret, frame = cap.read()
+        framesource.append(frame)
 
     cap.release()
-
-    for i in range(numthreads):
-        process = threading.Thread(target=asciiprocessing, args=(q, result, optchosen))
-        process.setDaemon(True)
-        process.start()
-
-    progframe = total_frames - q.qsize()    #This is just for the progress bar.
-    progdone = False
-    while progframe <= total_frames:
-        if progframe > total_frames:
-            progframe = total_frames
-        if progframe == total_frames:
-            progdone = True
-
-        progress_bar(progframe - 1, total_frames - 1)
-        progframe = total_frames - q.qsize()
-
-        if progdone:
-            break
-
-    q.join()
+    result = threadify(total_frames, framesource, asciiprocessing, optchosen)
     print("\nVideo processing and ascii-fication completed!\n")
     return result, srcfps
 
@@ -82,7 +60,6 @@ def asciiprocessing(q,result, optchosen):
         q.task_done()
     return True
 
-
 # A little note of acknowledgement to Alex1Rohwer. The following code of converting image frames into ASCII characters is not original, and is
 # based off the code from https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py. As this code repository gains more
 # traction, I feel that I need to properly source the code.
@@ -93,8 +70,6 @@ def resize_image(image_frame):
     aspect_ratio = (height / float(width * 2.5))  # 2.5 modifier to offset vertical scaling on console
     new_height = int(aspect_ratio * frame_size)
     resized_image = image_frame.resize((frame_size, new_height))
-    # print('Aspect ratio: %f' % aspect_ratio)
-    # print('New dimensions %d %d' % resized_image.size)
     return resized_image
 
 
@@ -112,8 +87,7 @@ def pixels_to_ascii(image_frame):
 def ascii_generator(passthru):
     ascii_characters = pixels_to_ascii(greyscale(resize_image(Image.fromarray(passthru))))  # get ascii characters
     pixel_count = len(ascii_characters)
-    ascii_image = "\n".join(                    #Can't change this, haven't the foggiest what this does for now.
-        [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
+    ascii_image = "\n".join([ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
     return ascii_image
 
 def save_later(encodesource, sourcename, srcfps):
@@ -143,32 +117,8 @@ def decode_from_rle(result):
         srcfps = framesource[0]
         del framesource[0]
         total_frames = len(framesource)
-        numthreads = min(50, total_frames)
         print("Processing frames... One moment!")
-        q = Queue(maxsize=0)
-        result = [{} for x in range(total_frames)]
-        for i in range(1, len(framesource)):
-            q.put((i, framesource[i]))
-        for i in range(numthreads):
-            process = threading.Thread(target=asciidecoding, args=(q, result))
-            process.setDaemon(True)
-            process.start()
-
-        progframe = total_frames - q.qsize()    #This is just for the progress bar.
-        progdone = False
-        while progframe <= total_frames:
-            if progframe > total_frames:
-                progframe = total_frames
-            if progframe == total_frames:
-                progdone = True
-
-            progress_bar(progframe - 1, total_frames - 1)
-            progframe = total_frames - q.qsize()
-
-            if progdone:
-                break
-
-        q.join()
+        result = threadify(total_frames, framesource, asciidecoding)
         return result, srcfps
 
 def asciidecoding(q,result):
@@ -183,15 +133,50 @@ def asciidecoding(q,result):
             else:
                 frameshape += pixel * int(cycles)
                 cycles = ""
-        frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)
+        frameshape = re.sub("(.{150})", "\\1\n", frameshape, 0, re.DOTALL)  #This splits the line every 150 chars and adds a newline.
         result[framesource[0]] = frameshape[:-1]
         q.task_done()
     return True
 
+def threadify(fCount,qSource,targetfunc, optchosen = False):
+    numthreads = min(50, fCount)
+    q = Queue(maxsize=0)
+    result = [{} for x in range(fCount)]
+    for i in range(len(qSource)):
+        q.put((i, qSource[i]))
+
+    if optchosen:
+        for i in range(numthreads):
+            process = threading.Thread(target=targetfunc, args=(q, result, optchosen))
+            process.setDaemon(True)
+            process.start()
+    else:
+        for i in range(numthreads):
+            process = threading.Thread(target=targetfunc, args=(q, result))
+            process.setDaemon(True)
+            process.start()
+
+    progframe = fCount - q.qsize()    #This is just for the progress bar.
+    progdone = False
+    while progframe <= fCount:
+        if progframe > fCount:
+            progframe = fCount
+        if progframe == fCount:
+            progdone = True
+
+        progress_bar(progframe - 1, fCount - 1)
+        progframe = fCount - q.qsize()
+
+        if progdone:
+            break
+
+    q.join()
+    return result
+
 
 def audiosource():
     while True:
-        user_input = input("What is the name of the video you want to play back?")
+        user_input = input("What is the name of the video you want to play back? ")
         user_input.strip()
         if not os.path.isfile(user_input + ".mp4"):
             print("Invalid file. Please check again.")
@@ -224,13 +209,14 @@ def main():
                     print('\nDecode complete!')
                 else:
                     results, srcfps = extract_resize_convert_frames(sourcename + '.mp4', 1)
+                p = vlc.MediaPlayer()   #Fake instance, just as a catch for error to stop properly.
                 #os.system('color F0')  #Linux doesn't use this. Plus, this is a system call, which will replace the terminal settings for the user.
                 if os.path.isfile(sourcename + ".mp3"):
                     p = vlc.MediaPlayer(sourcename + ".mp3")
                     print("Playing .mp3")
                     p.play()
                 elif os.path.isfile(sourcename + ".mid"): #...not as nice imo, on second thought.
-                    p.vlc.MediaPlayer(sourcename + ".mid")
+                    p = vlc.MediaPlayer(sourcename + ".mid")
                     print("Playing .mid")
                     p.play()
                 else:
@@ -277,7 +263,7 @@ def main():
                 print('Unknown input!\n')
                 continue
         except: #In case of Ctrl-C, graceful exit.
-            #print(traceback.format_exc())
+            print(traceback.format_exc())
             print("Ending script.")
             sys.exit()
 
