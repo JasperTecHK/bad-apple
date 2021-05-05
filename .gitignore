@@ -2,8 +2,10 @@
 /ExtractedFrames
 /TextFiles
 *.sh
-*.rle
+*.ascii
 *.jpg
 *.txt
 *.log
+*.mp*
+*.mid
 dev-test.py

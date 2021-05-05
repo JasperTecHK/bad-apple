@@ -91,7 +91,7 @@ def ascii_generator(passthru):
     return ascii_image
 
 def save_later(encodesource, sourcename, srcfps):
-    with open (sourcename + ".rle", "w+") as rlebackup:
+    with open (sourcename + ".ascii", "w+") as rlebackup:
         encodesource.insert(0, srcfps)
         rlebackup.write(json.dumps(encodesource))
 
@@ -203,9 +203,9 @@ def main():
 
             if user_input == '1':
                 sourcename = audiosource()
-                if os.path.isfile(sourcename + ".rle"):
+                if os.path.isfile(sourcename + ".ascii"):
                     print('Decoding save.')
-                    results, srcfps = decode_from_rle(sourcename + ".rle")
+                    results, srcfps = decode_from_rle(sourcename + ".ascii")
                     print('\nDecode complete!')
                 else:
                     results, srcfps = extract_resize_convert_frames(sourcename + '.mp4', 1)
@@ -241,7 +241,7 @@ def main():
                 sourcename = audiosource()
                 print("Removing save...")
                 try:
-                    os.remove(sourcename + ".rle")
+                    os.remove(sourcename + ".ascii")
                 except:
                     print("File does not exist.")
                 continue

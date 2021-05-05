@@ -86,6 +86,6 @@ greyscale()
 
 pixels_to_ascii()
 ```
-These functions are called in the `ascii_generator()` function to convert image files to ASCII format and stores them into .rle files. 
+These functions are called in the `ascii_generator()` function to convert image files to ASCII format and stores them into .ascii files. 
 
 Note that the ASCII conversion code is not original, and was taken from [here](https://github.com/kiteco/python-youtube-code/blob/master/ascii/ascii_convert.py).
