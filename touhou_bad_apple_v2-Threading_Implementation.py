@@ -138,7 +138,7 @@ def asciidecoding(q,result):
         q.task_done()
     return True
 
-def threadify(fCount,qSource,targetfunc, optchosen = False):
+def threadify(fCount, qSource, targetfunc, optchosen = False):
     numthreads = min(50, fCount)
     q = Queue(maxsize=0)
     result = [{} for x in range(fCount)]
@@ -148,13 +148,11 @@ def threadify(fCount,qSource,targetfunc, optchosen = False):
     if optchosen:
         for i in range(numthreads):
             process = threading.Thread(target=targetfunc, args=(q, result, optchosen))
-            process.setDaemon(True)
-            process.start()
     else:
         for i in range(numthreads):
             process = threading.Thread(target=targetfunc, args=(q, result))
-            process.setDaemon(True)
-            process.start()
+    process.setDaemon(True)
+    process.start()
 
     progframe = fCount - q.qsize()    #This is just for the progress bar.
     progdone = False
